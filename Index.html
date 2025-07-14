@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Isometric Sketchpad</title>
+  <title>isketric Sketchpad</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; background: #fff; }
@@ -29,7 +29,7 @@
     <button onclick="saveLines()">💾 Save</button>
     <button onclick="undo()">↩️ Undo</button>
     <button onclick="redo()">🔁 Redo</button>
-    <input type="file" id="fileLoader" accept=".isom" />
+    <input type="file" id="fileLoader" accept=".isk" />
   </div>
 
   <canvas id="canvas"></canvas>
@@ -91,12 +91,12 @@
         const pt = isoToScreen(selectedPoint.x, selectedPoint.y);
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = "#aa00ff";
+        ctx.fillStyle = "black";
         ctx.fill();
       }
 
       // Lines
-      ctx.strokeStyle = "#111";
+      ctx.strokeStyle = "orange";
       ctx.lineWidth = 2;
       lines.forEach(([p1, p2]) => {
         const s1 = isoToScreen(p1.x, p1.y);
