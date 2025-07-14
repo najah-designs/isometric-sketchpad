@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Isometric Sketchpad</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; background: #fff; }
+
+    #controls {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      font-family: sans-serif;
+      z-index: 10;
+    }
+
+    input, button {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <input type="text" id="filename" placeholder="drawing-name" value="sketchpad" />
+    <button onclick="saveLines()">💾 Save</button>
+    <button onclick="undo()">↩️ Undo</button>
+    <button onclick="redo()">🔁 Redo</button>
+    <input type="file" id="fileLoader" accept=".isom" />
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const dx = 40;
+    const dy = dx / 2;
+
+    let offsetX = width / 2;
+    let offsetY = height / 2;
+    let dragging = false;
+    let dragStart = { x: 0, y: 0 };
+
+    let lines = [];
+    let undoneLines = [];
+
+    let selectedPoint = null;
+
+    function isoToScreen(x, y) {
+      return {
+        x: (x - y) * dx + offsetX,
+        y: (x + y) * dy + offsetY
+      };
+    }
+
+    function screenToIso(sx, sy) {
+      sx -= offsetX;
+      sy -= offsetY;
+      let x = (sx / dx + sy / dy) / 2;
+      let y = (sy / dy - sx / dx) / 2;
+      return { x: Math.round(x), y: Math.round(y) };
+    }
+
+    function drawGrid() {
+      ctx.clearRect(0, 0, width, height);
+      ctx.strokeStyle = "#eee";
+      ctx.lineWidth = 1;
+
+      const range = 50;
+      for (let i = -range; i < range; i++) {
+        for (let j = -range; j < range; j++) {
+          const { x, y } = isoToScreen(i, j);
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fillStyle = "#ccc";
+          ctx.fill();
+        }
+      }
+
+      // Selected point
+      if (selectedPoint) {
+        const pt = isoToScreen(selectedPoint.x, selectedPoint.y);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#aa00ff";
+        ctx.fill();
+      }
+
+      // Lines
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 2;
+      lines.forEach(([p1, p2]) => {
+        const s1 = isoToScreen(p1.x, p1.y);
+        const s2 = isoToScreen(p2.x, p2.y);
+        ctx.beginPath();
+        ctx.moveTo(s1.x, s1.y);
+        ctx.lineTo(s2.x, s2.y);
+        ctx.stroke();
+      });
+    }
+
+    // Mouse Controls
+    canvas.addEventListener("mousedown", (e) => {
+      dragging = true;
+      dragStart = { x: e.clientX, y: e.clientY };
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (dragging) {
+        offsetX += e.clientX - dragStart.x;
+        offsetY += e.clientY - dragStart.y;
+        dragStart = { x: e.clientX, y: e.clientY };
+        drawGrid();
+      }
+    });
+
+    canvas.addEventListener("mouseup", () => dragging = false);
+    canvas.addEventListener("mouseleave", () => dragging = false);
+
+    // Drawing Lines by Clicking Points
+    canvas.addEventListener("click", (e) => {
+      if (dragging) return;
+      const pt = screenToIso(e.clientX, e.clientY);
+
+      if (!selectedPoint) {
+        selectedPoint = pt;
+      } else {
+        lines.push([selectedPoint, pt]);
+        selectedPoint = null;
+        undoneLines = []; // clear redo stack
+      }
+
+      drawGrid();
+    });
+
+    // Save Function
+    function saveLines() {
+      const filename = document.getElementById("filename").value || "sketchpad";
+      const blob = new Blob([JSON.stringify(lines)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename + ".isom";
+      a.click();
+    }
+
+    // Load Function
+    document.getElementById("fileLoader").addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (evt) {
+        try {
+          lines = JSON.parse(evt.target.result);
+          undoneLines = [];
+          selectedPoint = null;
+          drawGrid();
+        } catch {
+          alert("Invalid .isom file");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Undo / Redo
+    function undo() {
+      if (lines.length > 0) {
+        undoneLines.push(lines.pop());
+        drawGrid();
+      }
+    }
+
+    function redo() {
+      if (undoneLines.length > 0) {
+        lines.push(undoneLines.pop());
+        drawGrid();
+      }
+    }
+
+    drawGrid();
+  </script>
+</body>
+</html>
