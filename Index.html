@@ -144,11 +144,11 @@
 
     // Save Function
     function saveLines() {
-      const filename = document.getElementById("filename").value || "sketchpad";
+      const filename = document.getElementById("filename").value || "untitled";
       const blob = new Blob([JSON.stringify(lines)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = filename + ".isom";
+      a.download = filename + ".isk";
       a.click();
     }
 
@@ -164,7 +164,7 @@
           selectedPoint = null;
           drawGrid();
         } catch {
-          alert("Invalid .isom file");
+          alert("Invalid .isk file");
         }
       };
       reader.readAsText(file);
